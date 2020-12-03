@@ -41,8 +41,8 @@ The goal for this instruction set and these "hardware" specifications is to prov
         - `N` invert: condition prefix denoting inversion; `NZ` = not zero
 
 #### Instructions
-Expression | Opcode | Pseudocode Equivalent | Notes
-: | : | : | :
+| Expression | Opcode | Pseudocode Equivalent | Notes
+| :------ | :-- | :-- | :--
 NOP       | 0000 0000
 BRB       | 0000 0001 | set PC to popped stack address. | Used to return from functions.
 PPC       | 0000 0010 | push PC onto stack
