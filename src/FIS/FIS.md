@@ -98,6 +98,7 @@ loop:
 
     BRC #00     ; set addr #12 to start of .text
 ```
+
     - this program moves anything declared in `.data` to RAM on initialization.
     - the addresses for the first `MVI` and last `BRC` ops are dependent on the rest of the program, and are determined at compile-time
 - sections are then loaded in order:
