@@ -77,7 +77,9 @@ BFN lbl   | n/a | push current PC and then set PC to label | See functions. (com
 \*\*\* RDR, WRR, and WRI are blocking. PC will not increase until a value is read or written.
 
 #### File Binary Format
-- the first bytes are reserved for the setup sequence, which is just a small FIS program itself:
+- the first bytes are reserved for the setup sequence, which is just a small FIS program itself.
+    - this program moves anything declared in `.data` to RAM on initialization.
+    - the addresses for the first `MVI` and last `BRC` ops are dependent on the rest of the program, and are determined at compile-time
 ```
     MVI $A  #00 ; set addr #01 to end of .data
     MVI $Y  #12
@@ -98,9 +100,6 @@ loop:
 
     BRC #00     ; set addr #12 to start of .text
 ```
-
-    - this program moves anything declared in `.data` to RAM on initialization.
-    - the addresses for the first `MVI` and last `BRC` ops are dependent on the rest of the program, and are determined at compile-time
 - sections are then loaded in order:
     1. `.data`
     2. `.rodata`
