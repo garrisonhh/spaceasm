@@ -68,13 +68,12 @@ LLD $R lbl| 1100 10RR LLLL LLLL | load value at address lbl into $R | RAM (.data
 LLR $R lbl| 1100 11RR LLLL LLLL | load value at address lbl into $R | ROM (.rodata) address.
 RDR $R    | 1101 00RR | Read input bus to register.
 WRR $R    | 1101 01RR | Write register to bus.
-WRI $R    | 1101 1000 IIII IIII | Write immediate to bus.
 BCN cond lbl | 1110 CCCC LLLL LLLL | set PC to label if cond | See conditions.
 BFN lbl   | n/a | push current PC and then set PC to label | See procedures. (compiles to PPC BRC)
 
 \* signed ops not functional  
 \*\* labels and immediate values are interchangeable  
-\*\*\* RDR, WRR, and WRI are blocking. PC will not increase until a value is read or written.
+\*\*\* RDR and WRR are blocking. Nothing will be executed until a value is read or written.
 
 #### File Binary Format
 - the first bytes are reserved for the setup sequence, which is just a small FIS program itself.

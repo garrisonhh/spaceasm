@@ -32,8 +32,7 @@ const asm_ops2 = Dict{String, UInt8}(
 
 const asm_iops0 = Dict{String, UInt8}(
     "BRC" => 0xC0,
-    "PSH" => 0xC1,
-    "WRI" => 0xDC
+    "PSH" => 0xC1
 )
 
 const asm_iops1 = Dict{String, UInt8}(

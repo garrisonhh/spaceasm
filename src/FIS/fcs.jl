@@ -165,101 +165,34 @@ function do_unary_math(fcs::FCS, op::Function, r::UInt8)
     set_flags!(fcs, r, carry)
 end
 
-function BRB(fcs::FCS)
-    set_pc!(fcs, pop_stack!(fcs))
-end
-
-function PPC(fcs::FCS)
-    push_stack!(fcs, get_pc(fcs))
-end
-
-function INC(fcs::FCS, r::UInt8)
-    do_unary_math(fcs, x->x + 1, r)
-end
-
-function DEC(fcs::FCS, r::UInt8)
-    do_unary_math(fcs, x->x - 1, r)
-end
-
-function NOT(fcs::FCS, r::UInt8)
-    do_unary_math(fcs, ~, r)
-end
-
-function MOV(fcs::FCS, r::UInt8, x::UInt8)
-    set_reg!(r, get_reg(x))
-end
-
-function ADD(fcs::FCS, a::UInt8, b::UInt8)
-    do_math(fcs, +, a, b)
-end
-
-function SUB(fcs::FCS, a::UInt8, b::UInt8)
-    do_math(fcs, -, a, b)
-end
-
-function IOR(fcs::FCS, a::UInt8, b::UInt8)
-    do_math(fcs, |, a, b)
-end
-
-function XOR(fcs::FCS, a::UInt8, b::UInt8)
-    do_math(fcs, xor, a, b)
-end
-
-function AND(fcs::FCS, a::UInt8, b::UInt8)
-    do_math(fcs, &, a, b)
-end
-
-function SHR(fcs::FCS, a::UInt8, b::UInt8)
-    do_math(fcs, >>, a, get_reg(b))
-end
-
-function SHL(fcs::FCS, a::UInt8, b::UInt8)
-    do_math(fcs::FCS, <<, a, get_reg(b))
-end
-
-function LDD(fcs::FCS, a::UInt8, b::UInt8)
-    set_reg!(fcs, a, fcs.ram[get_reg(fcs, b) + 1])
-end
-
-function LDR(fcs::FCS, a::UInt8, b::UInt8)
-    set_reg!(fcs, a, fcs.rom[get_reg(fcs, b) + 1])
-end
-
-function STR(fcs::FCS, a::UInt8, b::UInt8)
-    fcs.ram[get_reg(fcs, b) + 1] = get_reg(fcs, a)
-end
-
-function BRC(fcs::FCS, b2::UInt8)
-    set_pc!(fcs, b2)
-end
-
-function PSH(fcs::FCS, b2::UInt8)
-    push_stack!(fcs, b2)
-end
-
-function MVI(fcs::FCS, r::UInt8, b2::UInt8)
-    set_reg!(fcs, r, b2)
-end
-
-function LLD(fcs::FCS, r::UInt8, b2::UInt8)
-    set_reg!(fcs, r, fcs.ram[b2])
-end
-
-function LLR(fcs::FCS, r::UInt8, b2::UInt8)
-    set_reg!(fcs, r, fcs.rom[b2])
-end
+BRB(fcs::FCS) = set_pc!(fcs, pop_stack!(fcs))
+PPC(fcs::FCS) = push_stack!(fcs, get_pc(fcs))
+INC(fcs::FCS, r::UInt8) = do_unary_math(fcs, x->x + 1, r)
+DEC(fcs::FCS, r::UInt8) = do_unary_math(fcs, x->x - 1, r)
+NOT(fcs::FCS, r::UInt8) = do_unary_math(fcs, ~, r)
+MOV(fcs::FCS, r::UInt8, x::UInt8) = set_reg!(r, get_reg(x))
+ADD(fcs::FCS, a::UInt8, b::UInt8) = do_math(fcs, +, a, b)
+SUB(fcs::FCS, a::UInt8, b::UInt8) = do_math(fcs, -, a, b)
+IOR(fcs::FCS, a::UInt8, b::UInt8) = do_math(fcs, |, a, b)
+XOR(fcs::FCS, a::UInt8, b::UInt8) = do_math(fcs, xor, a, b)
+AND(fcs::FCS, a::UInt8, b::UInt8) = do_math(fcs, &, a, b)
+SHR(fcs::FCS, a::UInt8, b::UInt8) = do_math(fcs, >>, a, get_reg(b))
+SHL(fcs::FCS, a::UInt8, b::UInt8) = do_math(fcs::FCS, <<, a, get_reg(b))
+LDD(fcs::FCS, a::UInt8, b::UInt8) = set_reg!(fcs, a, fcs.ram[get_reg(fcs, b) + 1])
+LDR(fcs::FCS, a::UInt8, b::UInt8) = set_reg!(fcs, a, fcs.rom[get_reg(fcs, b) + 1])
+# unsure if this needs to be in a begin/end block
+STR(fcs::FCS, a::UInt8, b::UInt8) = begin; fcs.ram[get_reg(fcs, b) + 1] = get_reg(fcs, a) end
+BRC(fcs::FCS, b2::UInt8) = set_pc!(fcs, b2)
+PSH(fcs::FCS, b2::UInt8) = push_stack!(fcs, b2)
+MVI(fcs::FCS, r::UInt8, b2::UInt8) = set_reg!(fcs, r, b2)
+LLD(fcs::FCS, r::UInt8, b2::UInt8) = set_reg!(fcs, r, fcs.ram[b2])
+LLR(fcs::FCS, r::UInt8, b2::UInt8) = set_reg!(fcs, r, fcs.rom[b2])
 
 function RDR(fcs::FCS, r::UInt8)
     error() # TODO
 end
 
 function WRR(fcs::FCS, r::UInt8)
-    error() # TODO
-end
-
-function WRI(fcs::FCS)
-    b2 = next_byte!()
-
     error() # TODO
 end
 
@@ -299,8 +232,6 @@ function D_OPS(fcs::FCS, x::UInt8, r::UInt8)
         RDR(fcs, r)
     elseif x == 1
         WRR(fcs, r)
-    else # x == 2
-        WRI(fcs)
     end
 end
 
