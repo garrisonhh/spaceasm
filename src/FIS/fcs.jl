@@ -3,6 +3,8 @@ include("buses.jl")
 #=
 FCS
 =#
+# TODO RDN
+
 @enum Flag::UInt8 f_zero=0 f_carry=1 f_negative=2
 
 struct FCS
@@ -10,7 +12,8 @@ struct FCS
     ram::Vector{UInt8}
     registers::Vector{UInt8} # $A $X $Y $Z flags pc stack_ptr
 
-    buses::Dict
+    bus::FCSBus
+    connection::Dict
 
     supp_math::Vector{Int}
 end
@@ -19,21 +22,23 @@ function FCS()
     registers = zeros(UInt8, 0x7)
     registers[7] = 0x7F
 
-    FCS(zeros(UInt8, 0x100), zeros(UInt8, 0x80), registers, Dict("out" => Bus(), "in" => nothing), [1])
+    FCS(
+        zeros(UInt8, 0x100),
+        zeros(UInt8, 0x80),
+        registers,
+        FCSBus(),
+        Dict{String, Any}("in" => nothing, "out" => nothing, "register" => UInt8(0)),
+        [1]
+    )
 end
 
 #=
 External (exported in FIS)
 =#
 # runs one clock cycle of the program
-function tick!(fcs::FCS, debug::Bool = false)::Bool
+function tick!(fcs::FCS)::Bool
     val = next_byte!(fcs)
-
     hi, lo = val >> 4, val & 0xF
-
-    if debug
-        println("Ticking $(string(val, base=16))...")
-    end
 
     if hi == 0
         if lo == 1
@@ -56,7 +61,25 @@ function tick!(fcs::FCS, debug::Bool = false)::Bool
         BCN(fcs, lo)
     end
 
-    # returns whether program done
+    if fcs.bus.reading
+        fcs.connection["in"] == nothing && error("Attempting to read without an input device!")
+        if fcs.connection["in"].writing
+            transfer_data!(fcs.connection["in"], fcs.bus)
+            set_reg!(fcs, fcs.connection["register"], get_data(fcs.bus))
+        else
+            set_pc!(fcs, get_pc(fcs) - 1)
+        end
+    elseif fcs.bus.writing
+        fcs.connection["out"] == nothing && error("Attempting to write without an output device!")
+        if fcs.connection["out"].reading
+            set_data!(fcs.bus, get_reg(fcs, fcs.connection["register"]))
+            transfer_data!(fcs.bus, fcs.connection["out"])
+        else
+            set_pc!(fcs, get_pc(fcs) - 1)
+        end
+    end
+
+    # whether program done
     get_pc(fcs) != 0xFF
 end
 
@@ -72,28 +95,16 @@ function load_program!(fcs::FCS, bytes::Vector{UInt8})
     end
 end
 
-function connect!(fcs::FCS, in_bus::Bus)
-    fcs.buses["in"] = in_bus
-end
+connect_in!(fcs::FCS, bus::Bus) = fcs.connection["in"] = bus
+connect_out!(fcs::FCS, bus::Bus) = fcs.connection["out"] = bus
 
 #=
 Internal
 =#
-function set_reg!(fcs::FCS, r::UInt8, value::UInt8)
-    fcs.registers[r + 1] = value
-end
-
-function get_reg(fcs::FCS, r::UInt8)::UInt8
-    fcs.registers[r + 1]
-end
-
-function set_pc!(fcs::FCS, addr::Integer)
-    fcs.registers[6] = UInt8(addr)
-end
-
-function get_pc(fcs::FCS)::UInt8
-    fcs.registers[6]
-end
+set_reg!(fcs::FCS, r::UInt8, value::UInt8) = fcs.registers[r + 1] = value
+get_reg(fcs::FCS, r::UInt8)::UInt8 = fcs.registers[r + 1]
+set_pc!(fcs::FCS, addr::Integer) = fcs.registers[6] = UInt8(addr)
+get_pc(fcs::FCS)::UInt8 = fcs.registers[6]
 
 function pop_stack!(fcs::FCS)
     val = fcs.ram[fcs.registers[7]]
@@ -123,9 +134,7 @@ function set_flags!(fcs::FCS, r::UInt8, carry::Bool = false)
     fcs.registers[5] = flags
 end
 
-function get_flag(fcs::FCS, flag::Flag)::Bool
-    Bool((fcs.registers[5] >> UInt8(flag)) & 1)
-end
+get_flag(fcs::FCS, flag::Flag)::Bool = Bool((fcs.registers[5] >> UInt8(flag)) & 1)
 
 function next_byte!(fcs::FCS)
     val = fcs.rom[fcs.registers[6] + 1]
@@ -161,7 +170,7 @@ function do_unary_math(fcs::FCS, op::Function, r::UInt8)
 
     carry = Bool((op(UInt(val)) >> 8) & 1)
 
-    set_reg!(fcs, r, UInt8(op(val)))
+    set_reg!(fcs, r, UInt8(op(val) & 0xFF))
     set_flags!(fcs, r, carry)
 end
 
@@ -170,7 +179,7 @@ PPC(fcs::FCS) = push_stack!(fcs, get_pc(fcs))
 INC(fcs::FCS, r::UInt8) = do_unary_math(fcs, x->x + 1, r)
 DEC(fcs::FCS, r::UInt8) = do_unary_math(fcs, x->x - 1, r)
 NOT(fcs::FCS, r::UInt8) = do_unary_math(fcs, ~, r)
-MOV(fcs::FCS, r::UInt8, x::UInt8) = set_reg!(r, get_reg(x))
+MOV(fcs::FCS, r::UInt8, x::UInt8) = set_reg!(fcs, r, get_reg(fcs, x))
 ADD(fcs::FCS, a::UInt8, b::UInt8) = do_math(fcs, +, a, b)
 SUB(fcs::FCS, a::UInt8, b::UInt8) = do_math(fcs, -, a, b)
 IOR(fcs::FCS, a::UInt8, b::UInt8) = do_math(fcs, |, a, b)
@@ -180,8 +189,7 @@ SHR(fcs::FCS, a::UInt8, b::UInt8) = do_math(fcs, >>, a, get_reg(b))
 SHL(fcs::FCS, a::UInt8, b::UInt8) = do_math(fcs::FCS, <<, a, get_reg(b))
 LDD(fcs::FCS, a::UInt8, b::UInt8) = set_reg!(fcs, a, fcs.ram[get_reg(fcs, b) + 1])
 LDR(fcs::FCS, a::UInt8, b::UInt8) = set_reg!(fcs, a, fcs.rom[get_reg(fcs, b) + 1])
-# unsure if this needs to be in a begin/end block
-STR(fcs::FCS, a::UInt8, b::UInt8) = begin; fcs.ram[get_reg(fcs, b) + 1] = get_reg(fcs, a) end
+STR(fcs::FCS, a::UInt8, b::UInt8) = fcs.ram[get_reg(fcs, b) + 1] = get_reg(fcs, a)
 BRC(fcs::FCS, b2::UInt8) = set_pc!(fcs, b2)
 PSH(fcs::FCS, b2::UInt8) = push_stack!(fcs, b2)
 MVI(fcs::FCS, r::UInt8, b2::UInt8) = set_reg!(fcs, r, b2)
@@ -189,13 +197,15 @@ LLD(fcs::FCS, r::UInt8, b2::UInt8) = set_reg!(fcs, r, fcs.ram[b2])
 LLR(fcs::FCS, r::UInt8, b2::UInt8) = set_reg!(fcs, r, fcs.rom[b2])
 
 function RDR(fcs::FCS, r::UInt8)
-    error() # TODO
+    fcs.bus.reading = true
+    fcs.connection["register"] = r
 end
-
 function WRR(fcs::FCS, r::UInt8)
-    error() # TODO
+    fcs.bus.writing = true
+    fcs.connection["register"] = r
 end
 
+# TODO bug in BCN in setup code
 function BCN(fcs::FCS, lo::UInt8)
     b2 = next_byte!(fcs)
     zero, carry, negative, invert = [Bool((lo >> i) & 1) for i=0:3]

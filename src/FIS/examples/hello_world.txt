@@ -1,0 +1,19 @@
+.rodata
+msg:
+    "Hello, World!"
+
+.text
+    MVI $A msg
+loop:
+    ; write
+    LDR $X $A
+    WRR $X
+    INC $A
+
+     ; check $X is zero (string is ended)
+    MOV $Y $A
+    MVI $A #00
+    ADD $A $X
+    MOV $A $Y
+
+    BCN NZ loop

@@ -72,8 +72,6 @@ loop:
 =#
 const setup = Vector{UInt8}([0xc4, 0x00, 0xc6, 0x12, 0x32, 0x08, 0x22, 0xa4, 0x32, 0xb4, 0xe9, 0x05, 0xc5, 0x00, 0xc6, 0x00, 0xc0, 0x00])
 
-# TODO setup
-
 function assemble(program::String)::Vector{UInt8}
     # sanitize
     lines = split(program, "\n")
@@ -110,8 +108,14 @@ function assemble(program::String)::Vector{UInt8}
 
     # compile
     labels = Dict{String,UInt8}()
-    program = [n for n in setup]
-    addr::UInt8 = length(setup)
+    program::Vector{UInt8} = [0xC0, 0x00] # BRC #00 ; addr to be replaced with .txt
+    addr::UInt8 = 0x2
+
+    data_setup = length(sections[".data"]) > 0
+    if data_setup
+        program = collect(setup)
+        addr = length(setup)
+    end
 
     char_to_uint8(c) = begin
         try
@@ -174,12 +178,12 @@ function assemble(program::String)::Vector{UInt8}
             end
         end
 
-        if section == ".data"
+        if data_setup && section == ".data"
             program[2] = addr
         end
     end
 
-    program[length(setup)] = addr
+    data_setup ? program[length(setup)] = addr : program[2] = addr
 
     for line in sections[".text"]
         line = split(process_labels(line))
