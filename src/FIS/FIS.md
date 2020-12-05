@@ -61,16 +61,16 @@ SHL $R $X | 1000 RRXX | $R <<= $X | Triggers flags.
 LDD $R $X | 1001 RRXX | load value at address $X into $R | RAM (.data) address.
 LDR $R $X | 1010 RRXX | load value at address $X into $R | ROM (.rodata) address.
 STR $R $X | 1011 RRXX | store value of $R at address $X | RAM address.
-BRC #I/lbl   | 1100 0000 LLLL LLLL | set PC to ROM address.
+BRC #I/lbl| 1100 0000 LLLL LLLL | set PC to ROM address.
 PSH lbl   | 1100 0001 IIII IIII | push address onto stack | ROM address.
-MVI $R #I/lbl | 1100 01RR IIII IIII | $R = #I
+MVI $R #I | 1100 01RR IIII IIII | $R = #I
 LLD $R lbl| 1100 10RR LLLL LLLL | load value at address lbl into $R | RAM (.data) address.
 LLR $R lbl| 1100 11RR LLLL LLLL | load value at address lbl into $R | ROM (.rodata) address.
 RDR $R    | 1101 00RR | Read input bus to register.
 WRR $R    | 1101 01RR | Write register to bus.
 WRI $R    | 1101 1000 IIII IIII | Write immediate to bus.
 BCN cond lbl | 1110 CCCC LLLL LLLL | set PC to label if cond | See conditions.
-BFN lbl   | n/a | push current PC and then set PC to label | See functions. (compiles to PPC BRC)
+BFN lbl   | n/a | push current PC and then set PC to label | See procedures. (compiles to PPC BRC)
 
 \* signed ops not functional  
 \*\* labels and immediate values are interchangeable  
