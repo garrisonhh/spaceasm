@@ -78,7 +78,8 @@ BFN lbl   | n/a | push current PC and then set PC to label | See procedures. (co
 #### File Binary Format
 - the first bytes are reserved for the setup sequence, which is just a small FIS program itself.
     - this program moves anything declared in `.data` to RAM on initialization.
-
+        - the addresses for the first `MVI` and last `BRC` ops are dependent on the rest of the program, and are determined at compile-time
+        - if the `.data` section is unused, the setup sequence is simply: `BRC #00     ; set addr #01 to beginning of .text`
 ```
     MVI $A #00 ; set addr #01 to end of .data
     MVI $Y #12
@@ -100,9 +101,6 @@ loop:
     BRC #00     ; set addr #12 to beginning of .text
 ```
 
-
-        - the addresses for the first `MVI` and last `BRC` ops are dependent on the rest of the program, and are determined at compile-time
-        - if the `.data` section is unused, the setup sequence is simply: `BRC #00     ; set addr #01 to beginning of .text`
 - sections are then loaded in order:
     1. `.data`
     2. `.rodata`

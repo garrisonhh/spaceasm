@@ -97,7 +97,7 @@ function assemble(program::String)::Vector{UInt8}
 
     for line in lines
         if startswith(line, ".")
-            if !(line in keys(sections))
+            if !haskey(sections, line)
                 error("Invalid section identifier $line")
             end
             curr = line
@@ -119,7 +119,7 @@ function assemble(program::String)::Vector{UInt8}
 
     char_to_uint8(c) = begin
         try
-            convert(UInt8, codepoint(c))
+            UInt8(c)
         catch
             error("Invalid ASCII char \"$c\"")
         end
@@ -142,7 +142,7 @@ function assemble(program::String)::Vector{UInt8}
 
     get_literal(operand) = begin
         if startswith(operand, '\$')
-            if length(operand) > 2 || !(operand[2] in keys(register_nums))
+            if length(operand) > 2 || !haskey(register_nums, operand[2])
                  error("Invalid register $operand")
             end
             return register_nums[operand[2]]
@@ -150,7 +150,7 @@ function assemble(program::String)::Vector{UInt8}
             return parse(UInt8, operand[2:length(operand)], base = 16)
         elseif startswith(operand, '\'') && endswith(operand, '\'') && length(operand) == 3
             return char_to_uint8(operand[2])
-        elseif operand in keys(labels)
+        elseif haskey(labels, operand)
             return labels[operand]
         else
             error("Invalid operand \"$operand\"")
@@ -196,17 +196,17 @@ function assemble(program::String)::Vector{UInt8}
                 params = [get_literal(line[i]) for i = 2:length(line)]
             end
 
-            if op in keys(asm_ops0)
+            if haskey(asm_ops0, op)
                 push!(program, asm_ops0[op])
-            elseif op in keys(asm_ops1)
+            elseif haskey(asm_ops1, op)
                 push!(program, asm_ops1[op] | params[1])
-            elseif op in keys(asm_ops2)
+            elseif haskey(asm_ops2, op)
                 push!(program, asm_ops2[op] | ((params[1] << 2) | params[2]))
-            elseif op in keys(asm_iops0)
+            elseif haskey(iasm_ops0, op)
                 push!(program, asm_iops0[op])
                 push!(program, params[1])
                 addr += 1
-            elseif op in keys(asm_iops1)
+            elseif haskey(iasm_ops1, op)
                 push!(program, asm_iops1[op] | params[1])
                 push!(program, params[2])
                 addr += 1
