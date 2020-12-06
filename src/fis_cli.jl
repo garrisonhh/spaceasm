@@ -1,3 +1,4 @@
+using Dates: now
 include("./FIS/FIS.jl")
 const fis = FIS
 
@@ -10,7 +11,7 @@ function prettyprint(v::Vector{UInt8})
 end
 
 function main()
-    length(ARGS) != 1 && error("Wrong number of args, please submit a relative file path")
+    length(ARGS) != 1 && error("Wrong number of args, please submit (only) a relative file path.")
 
     text = ""
     open(joinpath(@__DIR__, ARGS[1]), "r") do file
@@ -30,11 +31,16 @@ function main()
     println()
 
     fis.load_program!(sys, program)
-    fis.run!(sys)
 
-    println("> $(fis.get_output(out_b))")
+    t = now()
+    fis.run!(sys)
+    t = now() - t
+
+    for line in split(fis.get_output(out_b), '\n')
+        println("> $line")
+    end
     println()
-    println("Program completed successfully.")
+    println("Program completed successfully in $t.")
 end
 
 main()

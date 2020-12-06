@@ -15,30 +15,30 @@ The goal for this instruction set and these "hardware" specifications is to prov
 - Operands
     - Registers are written with a prefixed `$`: `$A $0 $1`
     - Immediate values are written with a prefixed `#`: `#0 #B #7`
-        - Immediate values are written in hexadecimal by default. Binary is also supported with an infixed `b`: #b00100010
-        - Immediate values are unsigned by default. Signed values use an infixed `+` or `-`: `#-10 #+2A`
+        - TODO: Immediate values are written in hexadecimal by default. Binary is also supported with an infixed `b`: #b00100010
     - Character and String support
         - Use the equivalent C syntax of `'c'` and `"str"` respectively
         - Characters are simply ASCII encoded values, directly translatable to unsigned immediate values.
-            - Strings are zero-terminated strings of characters. The only way to use a string is by writing it in the `.data` section and using a label.
+            - Strings are zero-terminated strings of characters. You can put them in a data section if you want to use them. (they don't support special characters like `\\n` atm, working on that)
             - There is only one true type, the integer. To the assembler, `#41` is equivalent to `'A'`
-- Sections, Labels, and Procedures
-    - Sections are marked with a prefixed `.`.
-        - There are 3 sections:
-            - `.text` which contains the program to execute.
-            - `.data` which contains readable and writeable labels and literals
-            - `.rodata` which contains read-only labels and literals
-    - Labels are marked with a suffix `:`.
-        - Labels are an easy way to represent addresses in memory in your code without having to change them every time you change your code. The assembler replaces all label references with the memory address where they reference.
-        - In the `.data` section, labels allow you to access stored constants easily.
-        - In the `.text` section, labels allow you to control the flow of the program.
-    - Procedures are like functions, use BFN or B
+- Sections are marked with a prefixed `.`
+    - There are 3 sections:
+        - `.text` which contains the program to execute.
+        - `.data` which contains readable and writeable labels and literals
+        - `.rodata` which contains read-only labels and literals
+- Labels are marked with a suffix `:`
+    - Labels are an easy way to represent addresses in memory in your code without having to change them every time you change your code. The assembler replaces all label references with the memory address where they reference.
+    - In the `.data` section, labels can be used to access stored constants easily.
+    - In the `.text` section, labels allow you to control the flow of the program through loops, conditionals, and procedures.
+- Procedures allow you to avoid rewriting code, which is super useful given the 256 byte ROM storage hard limit.
+    - `PPC`, `BCN`, and `BFN` allow you to store your current location in the program, jump to a procedure, and then you can use `BRB` to return to where you were.
 - Conditions
     - The special flags register contains bits that are triggered by certain conditions that the last math operation performed met. These are used in some conditional operations.
         - `Z` zero flag: last operation resulted in a zero
         - `C` carry flag: last operation resulted in a carry value
-        - negative flag: last operation resulted in a number where signed bit is 1. This allows for `LZ` (less than zero) and `GZ` (greater than zero) conditions. For unsigned numbers this isn't going to be accurate all the time of course
+        - negative flag: last operation resulted in a number where signed bit is 1. This allows for `LZ` (less than zero) and `GZ` (greater than zero) conditions. This is technically negative and not negative, zero will pass for the `GZ` condition, so it's kind of misnamed lol
         - `N` invert: condition prefix denoting inversion; `NZ` = not zero
+            - `NGZ` and `NLZ` are not valid conditions.
 
 #### Instructions
 | Expression | Opcode | Pseudocode Equivalent | Notes
@@ -109,8 +109,11 @@ BRC #00     ; set addr #01 to beginning of .text
     3. `.text`
 
 ### "System" Specs
-- exclusively 8 bit system
+- 8 bit `FCS` system
     - memory addressing and integers limited to 8 bit width
+        - 256 bytes of ROM
+            - program is loaded here
+        - 128 bytes of RAM
     - index registers
         - $A (accumulator), which supports math
         - $X, $Y, and $Z, which do not support math but can be written to and from

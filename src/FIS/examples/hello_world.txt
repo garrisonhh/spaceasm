@@ -10,7 +10,7 @@ loop:
     WRR $X
     INC $A
 
-     ; check $X is zero (string is ended)
+    ; check $X is zero (string is ended)
     MOV $Y $A
     MVI $A #00
     ADD $A $X

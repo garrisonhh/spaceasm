@@ -166,7 +166,7 @@ function assemble(program::String)::Vector{UInt8}
             end
 
             if startswith(line, "\"") && endswith(line, "\"")
-                for c in line[2:length(line) - 1]
+                for c in line[2:length(line)]
                     push!(program, char_to_uint8(c))
                     addr += 1
                 end
