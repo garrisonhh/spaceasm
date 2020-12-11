@@ -1,5 +1,5 @@
 using Dates: now
-include("./FIS/FIS.jl")
+include("./FIS.jl")
 const fis = FIS
 
 function prettyprint(v::Vector{UInt8})
